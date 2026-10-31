@@ -1,4 +1,4 @@
-FROM php:8.2-cli
+FROM php:8.2-apache
 
 # Install system dependencies + PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -12,10 +12,12 @@ RUN apt-get update && apt-get install -y \
     unzip \
     curl \
     git \
-    libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mysqli gd mbstring curl \
+    && docker-php-ext-install pdo pdo_mysql mysqli gd mbstring curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Enable Apache mod_rewrite and headers
+RUN a2enmod rewrite headers
 
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -23,21 +25,29 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . /var/www/html/
 
-# Install PHP dependencies (AWS SDK)
-RUN composer install --no-interaction --optimize-autoloader --no-dev --ignore-platform-reqs 2>/dev/null || \
-    composer require aws/aws-sdk-php:^3.290 --no-interaction --optimize-autoloader --ignore-platform-reqs
+# Install PHP dependencies (show errors so build fails loudly if it breaks)
+RUN composer require aws/aws-sdk-php:^3.290 --no-interaction --optimize-autoloader --ignore-platform-reqs
 
 # Create uploads directory with proper permissions
 RUN mkdir -p /var/www/html/uploads && chmod -R 777 /var/www/html/uploads
 
+# Set Apache document root to /var/www/html
+RUN sed -i 's|/var/www/html|/var/www/html|g' /etc/apache2/sites-available/000-default.conf
+
+# Allow .htaccess overrides (for CORS headers)
+RUN echo '<Directory /var/www/html>\n\
+    Options Indexes FollowSymLinks\n\
+    AllowOverride All\n\
+    Require all granted\n\
+</Directory>' >> /etc/apache2/apache2.conf
+
 # Increase PHP limits for base64 image uploads
-RUN echo "upload_max_filesize = 50M" > /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "post_max_size = 50M" >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "memory_limit = 256M" >> /usr/local/etc/php/conf.d/uploads.ini && \
-    echo "max_execution_time = 120" >> /usr/local/etc/php/conf.d/uploads.ini
+RUN echo "upload_max_filesize = 50M\npost_max_size = 50M\nmemory_limit = 256M\nmax_execution_time = 120" \
+    > /usr/local/etc/php/conf.d/uploads.ini
 
-ENV PORT=8080
-EXPOSE 8080
+# Render uses PORT env var — Apache must listen on it
+ENV PORT=10000
+EXPOSE 10000
 
-# Use router.php for CORS support (php -S doesn't read .htaccess)
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t /var/www/html /var/www/html/router.php"]
+# Start Apache on the Render-assigned PORT
+CMD ["sh", "-c", "sed -i \"s/Listen 80/Listen ${PORT}/g\" /etc/apache2/ports.conf && sed -i \"s/:80>/:${PORT}>/g\" /etc/apache2/sites-available/000-default.conf && apache2-foreground"]
