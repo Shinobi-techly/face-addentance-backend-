@@ -14,6 +14,14 @@ require_once '../includes/Database.php';
 $db   = new Database();
 $conn = $db->getConnection();
 
+// Helper: build a photo URL that works on localhost AND Render
+function photoUrl($path) {
+    if (!$path) return null;
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return $scheme . '://' . $host . '/uploads/' . $path;
+}
+
 $lecturer_id = trim($_GET['lecturer_id'] ?? '');
 $view        = trim($_GET['view']        ?? 'overview'); // overview | session | student
 $session_id  = intval($_GET['session_id'] ?? 0);
@@ -137,9 +145,7 @@ if ($view === 'overview') {
                 'full_name'         => $stu['full_name'],
                 'department'        => $ds['department'],
                 'semester'          => $ds['semester'],
-                'photo_url'         => $stu['photo_path']
-                    ? "http://localhost/face-attendance-api/uploads/" . $stu['photo_path']
-                    : null,
+                'photo_url'         => photoUrl($stu['photo_path']),
                 'sessions_held'     => $totalSessions,
                 'sessions_attended' => $attended,
                 'attendance_pct'    => $pct,
@@ -228,9 +234,7 @@ if ($view === 'session') {
         $roster[] = [
             'student_id'  => $stu['student_id'],
             'full_name'   => $stu['full_name'],
-            'photo_url'   => $stu['photo_path']
-                ? "http://localhost/face-attendance-api/uploads/" . $stu['photo_path']
-                : null,
+            'photo_url'   => photoUrl($stu['photo_path']),
             'status'      => $present ? 'present' : 'absent',
             'time_in'     => $present ? date('h:i A', strtotime($attMap[$stu['student_id']]['time'])) : null,
             'confidence'  => $present ? (int)$attMap[$stu['student_id']]['confidence'] : null,
@@ -349,9 +353,7 @@ if ($view === 'student') {
             'department'   => $student['department'],
             'semester'     => $student['semester'],
             'year_intake'  => $student['year_intake'],
-            'photo_url'    => $student['photo_path']
-                ? "http://localhost/face-attendance-api/uploads/" . $student['photo_path']
-                : null,
+            'photo_url'    => photoUrl($student['photo_path']),
             'sessions_held'     => $totalSessions,
             'sessions_attended' => $attended,
             'sessions_absent'   => $totalSessions - $attended,
