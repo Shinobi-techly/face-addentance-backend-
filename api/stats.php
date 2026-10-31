@@ -34,14 +34,13 @@ try {
     $stmt->execute();
     $weekly_trend = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
+    // Flat keys — this is what the frontend reads directly off data.*
     sendResponse(true, 'Statistics retrieved', [
-        'today' => [
-            'date' => $today,
-            'present' => (int)$today_count,
-            'total_students' => (int)$total_students,
-            'percentage' => $total_students > 0 ? round(($today_count / $total_students) * 100, 2) : 0
-        ],
-        'weekly_trend' => $weekly_trend
+        'today_present'      => (int)$today_count,
+        'total_students'     => (int)$total_students,
+        'average_attendance' => $total_students > 0 ? round(($today_count / $total_students) * 100, 2) : 0,
+        'today'              => $today,
+        'weekly_trend'       => $weekly_trend,
     ]);
     
 } catch(PDOException $e) {

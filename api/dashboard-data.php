@@ -67,9 +67,14 @@ foreach ($students as &$student) {
     $student['present_days']  = $present;
     $student['total_days']    = $total_days;
     $photoPath = $photoMap[$student['student_id']] ?? null;
-    $student['photo_url'] = $photoPath
-        ? "http://localhost/face-attendance-api/uploads/" . $photoPath
-        : null;
+    // Build dynamic photo URL — works on localhost AND Render/any host
+    if ($photoPath) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host   = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $student['photo_url'] = $scheme . '://' . $host . '/uploads/' . $photoPath;
+    } else {
+        $student['photo_url'] = null;
+    }
 }
 unset($student); // break reference to avoid accidental mutation
 
@@ -82,29 +87,41 @@ $intakeStats = $conn->query("SELECT year_intake, COUNT(*) as count FROM students
 $today = date('Y-m-d');
 $todayStmt = $conn->prepare("SELECT COUNT(DISTINCT student_id) as count FROM attendance WHERE date = ?");
 $todayStmt->execute([$today]);
-$today_count = $todayStmt->fetch(PDO::FETCH_ASSOC)['count'];
+$today_count = (int)$todayStmt->fetch(PDO::FETCH_ASSOC)['count'];
 
 // Total students (unfiltered) — used for accurate percentage calculations
 $totalAllStudents = (int)$conn->query("SELECT COUNT(*) FROM students")->fetchColumn();
-
 $totalStudents = count($students); // filtered count for display
+
+// Average attendance percentage across all students
+$avgAtt = 0;
+if (count($students) > 0) {
+    $sum = array_sum(array_column($students, 'attendance_percentage'));
+    $avgAtt = round($sum / count($students), 1);
+}
+
+// Build the unified stats block — supports BOTH frontend field name patterns
+$statsBlock = [
+    'total_students'    => $totalAllStudents,
+    'today_present'     => $today_count,
+    'today_percentage'  => $totalAllStudents > 0 ? round(($today_count / $totalAllStudents) * 100, 1) : 0,
+    'average_attendance' => $avgAtt,
+    'by_department'     => $deptStats,
+    'by_semester'       => $semesterStats,
+    'by_intake'         => $intakeStats,
+];
 
 echo json_encode([
     'success' => true,
     'data' => [
-        'students' => $students,
-        'statistics' => [
-            'total_students' => $totalStudents,
-            'today_present' => $today_count,
-            'today_percentage' => $totalAllStudents > 0 ? round(($today_count / $totalAllStudents) * 100, 1) : 0,
-            'by_department' => $deptStats,
-            'by_semester' => $semesterStats,
-            'by_intake' => $intakeStats
-        ],
-        'filters' => [
+        'success'    => true,       // nested for getDashboardData() check
+        'students'   => $students,
+        'stats'      => $statsBlock, // used by dashboard page
+        'statistics' => $statsBlock, // legacy alias
+        'filters'    => [
             'departments' => array_column($deptStats, 'department'),
-            'semesters' => [1,2,3],
-            'intakes' => array_column($intakeStats, 'year_intake')
+            'semesters'   => [1, 2, 3],
+            'intakes'     => array_column($intakeStats, 'year_intake')
         ]
     ]
 ]);
