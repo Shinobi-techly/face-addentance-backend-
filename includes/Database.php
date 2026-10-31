@@ -52,19 +52,37 @@ class Database {
         try {
             // Auto-detect PostgreSQL vs MySQL based on port or DATABASE_URL
             $dbUrl = getenv('DATABASE_URL');
+            
+            // Fallback: if no DATABASE_URL env var, use the Render DB credentials directly
+            if (!$dbUrl && $this->host === 'localhost' && getenv('RENDER')) {
+                $dbUrl = 'postgresql://attendance_system_j5ov_user:P43n7oG1XczLcSXxPmyyWoJHUQiiwnFX@dpg-dls1j0s761kc73docf8g-a.oregon-postgres.render.com/attendance_system_j5ov';
+            }
+            
+            // Re-parse URL if we have one (may have been set above)
+            if ($dbUrl) {
+                $parsed = parse_url($dbUrl);
+                if ($parsed) {
+                    if (isset($parsed['host'])) $this->host = $parsed['host'];
+                    if (isset($parsed['port'])) $this->port = $parsed['port'];
+                    if (isset($parsed['user'])) $this->username = $parsed['user'];
+                    if (isset($parsed['pass'])) $this->password = $parsed['pass'];
+                    if (isset($parsed['path'])) $this->db_name = ltrim($parsed['path'], '/');
+                }
+            }
+            
             $isPostgres = false;
             
-            if ($dbUrl && strpos($dbUrl, 'postgres://') === 0) {
+            if ($dbUrl && strpos($dbUrl, 'postgres') !== false) {
                 $isPostgres = true;
             } elseif ($this->port == '5432') {
                 $isPostgres = true;
             }
             
             if ($isPostgres) {
-                // PostgreSQL connection
-                $dsn = 'pgsql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->db_name;
+                // PostgreSQL connection — sslmode=require for Render
+                $dsn = 'pgsql:host=' . $this->host . ';port=' . ($this->port ?: '5432') . ';dbname=' . $this->db_name . ';sslmode=require';
             } else {
-                // MySQL connection (default)
+                // MySQL connection (default — local XAMPP)
                 $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->db_name . ';charset=utf8mb4';
             }
             
@@ -82,5 +100,6 @@ class Database {
         
         return $this->conn;
     }
+
 }
 ?>
