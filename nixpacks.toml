@@ -11,5 +11,8 @@ nixPkgs = [
     "composer"
 ]
 
+[phases.install]
+cmds = ["composer install --no-interaction --optimize-autoloader --no-dev --ignore-platform-reqs || composer require aws/aws-sdk-php:^3.290 --no-interaction --optimize-autoloader --ignore-platform-reqs"]
+
 [start]
-cmd = "php -S 0.0.0.0:$PORT -t ."
+cmd = "php -S 0.0.0.0:$PORT -t . router.php"
