@@ -12,8 +12,9 @@ RUN apt-get update && apt-get install -y \
     unzip \
     curl \
     git \
+    libpq-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mysqli gd mbstring curl \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mysqli gd mbstring curl \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
