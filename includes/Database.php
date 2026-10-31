@@ -50,7 +50,24 @@ class Database {
         $this->conn = null;
         
         try {
-            $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->db_name . ';charset=utf8mb4';
+            // Auto-detect PostgreSQL vs MySQL based on port or DATABASE_URL
+            $dbUrl = getenv('DATABASE_URL');
+            $isPostgres = false;
+            
+            if ($dbUrl && strpos($dbUrl, 'postgres://') === 0) {
+                $isPostgres = true;
+            } elseif ($this->port == '5432') {
+                $isPostgres = true;
+            }
+            
+            if ($isPostgres) {
+                // PostgreSQL connection
+                $dsn = 'pgsql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->db_name;
+            } else {
+                // MySQL connection (default)
+                $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->db_name . ';charset=utf8mb4';
+            }
+            
             $this->conn = new PDO($dsn, $this->username, $this->password);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
