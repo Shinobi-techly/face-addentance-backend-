@@ -12,7 +12,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY . .
 
-# Install dependencies - if lock file exists use install, else update
+# Install dependencies
 RUN composer install --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs 2>/dev/null \
     || composer update --no-dev --no-interaction --optimize-autoloader --ignore-platform-reqs
 
@@ -24,5 +24,8 @@ RUN echo "upload_max_filesize=50M" > /usr/local/etc/php/conf.d/z.ini \
     && echo "memory_limit=256M" >> /usr/local/etc/php/conf.d/z.ini
 
 EXPOSE 10000
+
+# NOTE: Set DATABASE_URL, AWS_ACCESS_KEY, AWS_SECRET_KEY, AWS_REGION, AWS_COLLECTION_ID
+# in Render Dashboard -> Environment Variables (not here, to avoid GitHub secret scanning)
 
 CMD ["sh", "-c", "echo 'Starting PHP on port ${PORT:-10000}' && php -S 0.0.0.0:${PORT:-10000} -t /app /app/router.php"]
