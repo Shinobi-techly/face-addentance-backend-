@@ -76,13 +76,15 @@ class Database {
             
             if ($dbUrl && strpos($dbUrl, 'postgres') !== false) {
                 $isPostgres = true;
+                // URL without an explicit port must use the PostgreSQL default, not MySQL's 3306
+                if (!isset($parsed['port'])) $this->port = '5432';
             } elseif ($this->port == '5432') {
                 $isPostgres = true;
             }
             
             if ($isPostgres) {
                 // PostgreSQL connection — sslmode=require for Render
-                $dsn = 'pgsql:host=' . $this->host . ';port=' . ($this->port ?: '5432') . ';dbname=' . $this->db_name . ';sslmode=require';
+                $dsn = 'pgsql:host=' . $this->host . ';port=' . ($this->port ?: '5432') . ';dbname=' . $this->db_name . ';sslmode=require;connect_timeout=10';
             } else {
                 // MySQL connection (default — local XAMPP)
                 $dsn = 'mysql:host=' . $this->host . ';port=' . $this->port . ';dbname=' . $this->db_name . ';charset=utf8mb4';
