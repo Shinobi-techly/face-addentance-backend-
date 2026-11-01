@@ -16,8 +16,8 @@ if (file_exists($envFile)) {
     }
 }
 
-define('AWS_ACCESS_KEY', getenv('AWS_ACCESS_KEY') ?: '');
-define('AWS_SECRET_KEY', getenv('AWS_SECRET_KEY') ?: '');
-define('AWS_REGION', getenv('AWS_REGION') ?: 'us-east-1');
-define('AWS_COLLECTION_ID', getenv('AWS_COLLECTION_ID') ?: 'school_attendance');
+define('AWS_ACCESS_KEY', getenv('AWS_ACCESS_KEY') ?: getenv('AWS_ACCESS_KEY_ID') ?: '');
+define('AWS_SECRET_KEY', getenv('AWS_SECRET_KEY') ?: getenv('AWS_SECRET_ACCESS_KEY') ?: '');
+define('AWS_REGION', getenv('AWS_REGION') ?: getenv('AWS_DEFAULT_REGION') ?: 'us-east-1');
+define('AWS_COLLECTION_ID', getenv('AWS_COLLECTION_ID') ?: getenv('REKOGNITION_COLLECTION_ID') ?: 'school_attendance');
 ?>
