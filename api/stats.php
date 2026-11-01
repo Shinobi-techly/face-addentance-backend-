@@ -27,11 +27,11 @@ try {
     $stmt = $db->prepare("
         SELECT date, COUNT(*) as count 
         FROM attendance 
-        WHERE date >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        WHERE date >= ?
         GROUP BY date 
         ORDER BY date DESC
     ");
-    $stmt->execute();
+    $stmt->execute([date('Y-m-d', strtotime('-7 days'))]);
     $weekly_trend = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Flat keys — this is what the frontend reads directly off data.*
