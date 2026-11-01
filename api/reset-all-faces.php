@@ -12,18 +12,29 @@ require_once __DIR__ . '/config.php';
 require_once dirname(__DIR__) . '/includes/AmazonRekognition.php';
 
 try {
+    if (($_GET['confirm'] ?? '') !== 'RESET') {
+        echo json_encode(['success' => false, 'message' => 'Add ?confirm=RESET to the URL to wipe all students, faces and attendance.']);
+        exit();
+    }
+
     $db = getDB();
+    $isPg = $db->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql';
     
     // 1. Wipe AWS Rekognition Collection
     $rekognition = new AmazonRekognition();
     $awsReset = $rekognition->resetCollection();
     
-    // 2. Clear all students & attendance from MySQL
-    $db->exec("SET FOREIGN_KEY_CHECKS = 0;");
-    $db->exec("TRUNCATE TABLE attendance;");
-    $db->exec("TRUNCATE TABLE student_faces;");
-    $db->exec("TRUNCATE TABLE students;");
-    $db->exec("SET FOREIGN_KEY_CHECKS = 1;");
+    // 2. Clear all students & attendance
+    if ($isPg) {
+        $db->exec("TRUNCATE TABLE attendance, student_faces, students RESTART IDENTITY CASCADE");
+        try { $db->exec("UPDATE attendance_sessions SET marked_students = 0"); } catch (Throwable $e) {}
+    } else {
+        $db->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        $db->exec("TRUNCATE TABLE attendance;");
+        $db->exec("TRUNCATE TABLE student_faces;");
+        $db->exec("TRUNCATE TABLE students;");
+        $db->exec("SET FOREIGN_KEY_CHECKS = 1;");
+    }
     
     // 3. Clear uploads directory (keep .gitkeep)
     $uploadDir = dirname(__DIR__) . '/uploads';
