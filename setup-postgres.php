@@ -35,6 +35,12 @@ try {
     
     echo "<p>📋 Executing schema SQL...</p>";
     
+    // Remove comment lines first, otherwise statements preceded by a comment get skipped
+    $schema = preg_replace('/^\s*--.*$/m', '', $schema);
+    // Safe to re-run: never drop existing data, only create what is missing
+    $schema = preg_replace('/CREATE TABLE\s+(?!IF NOT EXISTS)/i', 'CREATE TABLE IF NOT EXISTS ', $schema);
+    $schema = preg_replace('/CREATE INDEX\s+(?!IF NOT EXISTS)/i', 'CREATE INDEX IF NOT EXISTS ', $schema);
+    
     // Split by semicolons and execute each statement
     $statements = array_filter(array_map('trim', explode(';', $schema)));
     
@@ -42,7 +48,7 @@ try {
     $errors = 0;
     
     foreach ($statements as $statement) {
-        if (empty($statement) || strpos($statement, '--') === 0) {
+        if (empty($statement) || stripos($statement, 'DROP TABLE') === 0) {
             continue;
         }
         

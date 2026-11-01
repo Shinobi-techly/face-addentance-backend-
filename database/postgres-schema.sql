@@ -151,14 +151,10 @@ INSERT INTO lecturers (lecturer_id, full_name, email, department) VALUES
 ('LEC017', 'Lecturer 17', 'lec017@school.edu', 'SS2'),
 ('LEC018', 'Lecturer 18', 'lec018@school.edu', 'SS3'),
 ('LEC019', 'Lecturer 19', 'lec019@school.edu', 'JSS1'),
-('LEC020', 'Lecturer 20', 'lec020@school.edu', 'SS1');
+('LEC020', 'Lecturer 20', 'lec020@school.edu', 'SS1')
+ON CONFLICT DO NOTHING;
 
-INSERT INTO students (student_id, full_name, department, year_intake, semester) VALUES
-('STD-2026-001', 'John Doe',      'JSS1', '2026', 1),
-('STD-2026-002', 'Jane Smith',    'JSS2', '2026', 1),
-('STD-2026-003', 'Alice Johnson', 'JSS3', '2026', 3),
-('STD-2026-004', 'Bob Williams',  'SS1',  '2026', 1),
-('STD-2026-005', 'Carol Brown',   'SS2',  '2026', 2);
+
 
 -- Verify
 SELECT 'students' AS table_name, COUNT(*) AS total_rows FROM students
