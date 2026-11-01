@@ -6,12 +6,16 @@ header('Content-Type: text/html; charset=utf-8');
 
 echo "<h1>🚀 PostgreSQL Schema Setup</h1>";
 
-// Database connection details from Render
-$host = getenv('DATABASE_URL') ? parse_url(getenv('DATABASE_URL'), PHP_URL_HOST) : 'dpg-dls1j0s761kc73docf8g-a.oregon-postgres.render.com';
-$port = getenv('DATABASE_URL') ? parse_url(getenv('DATABASE_URL'), PHP_URL_PORT) : 5432;
-$dbname = getenv('DATABASE_URL') ? ltrim(parse_url(getenv('DATABASE_URL'), PHP_URL_PATH), '/') : 'attendance_system_j5ov';
-$user = getenv('DATABASE_URL') ? parse_url(getenv('DATABASE_URL'), PHP_URL_USER) : 'attendance_system_j5ov_user';
-$password = getenv('DATABASE_URL') ? parse_url(getenv('DATABASE_URL'), PHP_URL_PASS) : 'P43n7oG1XczLcSXxPmyyWoJHUQiiwnFX';
+// Database connection details from Render (DATABASE_URL env var)
+if (!getenv('DATABASE_URL')) {
+    die("<p style='color:red'>❌ DATABASE_URL is not set in Render environment variables.</p>");
+}
+$p = parse_url(getenv('DATABASE_URL'));
+$host = $p['host'];
+$port = $p['port'] ?? 5432;
+$dbname = ltrim($p['path'], '/');
+$user = $p['user'];
+$password = $p['pass'];
 
 echo "<p><strong>Connecting to:</strong> $host:$port / $dbname</p>";
 

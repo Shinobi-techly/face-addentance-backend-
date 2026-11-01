@@ -53,9 +53,11 @@ class Database {
             // Auto-detect PostgreSQL vs MySQL based on port or DATABASE_URL
             $dbUrl = getenv('DATABASE_URL');
             
-            // Fallback: if no DATABASE_URL env var, use the Render DB credentials directly
-            if (!$dbUrl && $this->host === 'localhost' && getenv('RENDER')) {
-                $dbUrl = 'postgresql://attendance_system_j5ov_user:P43n7oG1XczLcSXxPmyyWoJHUQiiwnFX@dpg-dls1j0s761kc73docf8g-a.oregon-postgres.render.com/attendance_system_j5ov';
+            // On Render, DATABASE_URL must be set in the service's environment variables.
+            if (!$dbUrl && getenv('RENDER')) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'DATABASE_URL is not set on Render']);
+                exit();
             }
             
             // Re-parse URL if we have one (may have been set above)
